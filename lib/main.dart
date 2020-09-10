@@ -46,7 +46,6 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData(
         brightness: Brightness.dark,
       ),
-      //home: GetAddonsScreen(),
       home: HomeScreen(),
     );
   }
