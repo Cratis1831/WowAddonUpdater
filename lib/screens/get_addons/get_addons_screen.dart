@@ -130,7 +130,7 @@ class _GetAddonsScreenState extends State<GetAddonsScreen> {
                 addonData.isUpdate
                     ? FlatButton(
                         child: Text("Download", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                        color: Colors.indigo,
+                        color: Theme.of(context).buttonColor,
                         onPressed: () {
                           downloadFile(addonData.latestFiles[_latestVersion].downloadUrl);
 

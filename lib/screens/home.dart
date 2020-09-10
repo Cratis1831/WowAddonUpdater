@@ -29,8 +29,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         title: Text('WoW Addon Updater'),
         bottom: TabBar(
           controller: _tabController,
-          unselectedLabelColor: Colors.white,
-          labelColor: Colors.indigoAccent,
+          unselectedLabelColor: Theme.of(context).tabBarTheme.unselectedLabelColor,
+          labelColor: Theme.of(context).tabBarTheme.labelColor,
           tabs: [
             Tab(text: 'Get Addons', icon: Icon(Icons.get_app)),
             Tab(text: 'My Addons', icon: Icon(Icons.update)),

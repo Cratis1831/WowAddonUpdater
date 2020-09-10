@@ -1,14 +1,8 @@
-import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:window_size/window_size.dart';
-import 'package:wow_addon_updater/models/get_addons.dart';
-import 'package:wow_addon_updater/screens/home.dart';
-//import 'package:wow_addon_updater/config.dart';
-
-import 'screens/my_addons/my_addons_screen_old.dart';
-import 'screens/get_addons/get_addons_screen.dart';
+import './screens/home.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +19,7 @@ void main() {
       setWindowFrame(frame);
       setWindowMinSize(Size(0.5 * width, 0.5 * height));
       setWindowMaxSize(Size(1.5 * width, 1.5 * height));
-      setWindowTitle('Flutter Testbed on ${Platform.operatingSystem}');
+      setWindowTitle('WoW Addon Updater');
     }
   });
 
@@ -38,13 +32,20 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'WoW Addon Updater',
       theme: ThemeData(
         primaryColor: Colors.black,
         accentColor: Colors.white70,
         brightness: Brightness.dark,
+        buttonColor: Colors.deepPurple,
+        tabBarTheme: TabBarTheme(
+          labelColor: Colors.deepPurpleAccent,
+          unselectedLabelColor: Colors.white,
+        ),
       ),
-      darkTheme: ThemeData(brightness: Brightness.dark),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+      ),
       //home: GetAddonsScreen(),
       home: HomeScreen(),
     );
