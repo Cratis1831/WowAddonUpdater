@@ -94,8 +94,19 @@ class _BodyState extends State<Body> {
 
   Future<List<CurrentAddons>> fetchCurrentAddons() async {
     Directory retail = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\Interface\Addons\");
+    Directory config = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\");
     List<CurrentAddons> listOfAddons = List<CurrentAddons>();
     List<String> addonSearchQuery = List<String>();
+    String currentGameVersion;
+
+    final file = new File('${config.path}\\WTF\\Config.wtf');
+    List<String> lines = file.readAsLinesSync();
+    lines.forEach((line) {
+      if (line.contains("SET lastAddonVersion ")) {
+        currentGameVersion = line.split("SET lastAddonVersion ")[1].replaceAll("\"", '');
+        print('currentGameVersion: $currentGameVersion');
+      }
+    });
 
     await retail.list().toList().then((value) async {
       String addonFolderName;
@@ -112,6 +123,10 @@ class _BodyState extends State<Body> {
           List<String> lines = file.readAsLinesSync();
           lines.forEach(
             (line) {
+              if (line.contains("## Interface: ")) {
+                currentGameVersion = line.split("## Interface: ")[1];
+                //print('toc title: $tempaddonTitleNameFromToc');
+              }
               if (line.contains("## Title: ")) {
                 findTitle = true;
                 tempaddonTitleNameFromToc = line.split("Title: ")[1];
@@ -138,7 +153,7 @@ class _BodyState extends State<Body> {
           );
         }
         if (addonFolderName != "" && !addonFolderName.contains("|c")) {
-          print(addonFolderName);
+          //print(addonFolderName);
           addonSearchQuery.add(addonFolderName.replaceAll(new RegExp(r'[^\w\s]+'), ''));
         }
       }
@@ -149,24 +164,58 @@ class _BodyState extends State<Body> {
     await fetchAddonInfo(addonSearchQuery.join(",")).then((data) {
       if (data != null) {
         for (var value in data) {
-          //print('name: ${value.name}');
+          int latestFileIndex;
           String foundAddon;
-          var foundAddonIndex =
-              addonSearchQuery.indexWhere((element) => (element == value.name || element == value.latestFiles[0].modules[0].foldername));
-          if (foundAddonIndex != -1) foundAddon = addonSearchQuery[foundAddonIndex];
+          int latestModuleIndex;
 
-          int latestFileIndex = value.latestFiles.indexWhere((element) => element.releaseType == 1 && !element.displayName.contains('-classic'));
-          print('latestFileIndex: $latestFileIndex');
+          latestFileIndex = value.latestFiles.indexWhere((element) => element.releaseType == 1 && element.gameVersionFlavor == 'wow_retail');
+          //print('latestFileIndex: $latestFileIndex');
           if (latestFileIndex != -1) {
-            int latestModuleIndex =
-                value.latestFiles[latestFileIndex].modules.indexWhere((element) => (element.foldername == foundAddon && element.type == 3));
+            latestModuleIndex = value.latestFiles[latestFileIndex].modules.indexWhere((element) => (element.type == 3));
             print('latestModuleIndex: $latestModuleIndex');
             if (latestModuleIndex != -1) {
+              var foundAddonIndex = addonSearchQuery.indexWhere(
+                  (element) => (element == value.name || element == value.latestFiles[latestFileIndex].modules[latestModuleIndex].foldername));
+              if (foundAddonIndex != -1) foundAddon = addonSearchQuery[foundAddonIndex];
               String mainFolder = value.latestFiles[latestFileIndex].modules[latestModuleIndex].foldername;
+              String thumbnailUrl = 'https://vignette.wikia.nocookie.net/onceuponatime-fanon/images/1/14/No_Image_Available.jpg';
+              if (value.attachments.isNotEmpty) {
+                int defaultThumbnailIndex = value.attachments.indexWhere((element) => element.isDefault);
+                if (defaultThumbnailIndex == -1) {
+                  thumbnailUrl = value.attachments[0].thumbnailUrl;
+                } else {
+                  thumbnailUrl = value.attachments[defaultThumbnailIndex].thumbnailUrl;
+                }
+              }
+
+              // if (value.latestFiles[latestFileIndex].displayName.isEmpty) {
+              //   print('Missing DisplayName: ${value.name}');
+              // }
+
+              // if (value.latestFiles[latestFileIndex].gameVersion.isEmpty) {
+              //   print('Missing GameVersion: ${value.name}');
+              // }
+
+              // if (value.authors.isEmpty) {
+              //   print('Missing Authors: ${value.name}');
+              // }
+
               print('mainFolder: $mainFolder - $foundAddon');
-              if (mainFolder == foundAddon || value.name == foundAddon) {
-                CurrentAddons c = CurrentAddons(addonName: mainFolder, btnText: "", isUpdate: true);
-                if (listOfAddons.indexWhere((element) => element.addonName == mainFolder) == -1) {
+              if ((mainFolder == foundAddon || value.name == foundAddon) &&
+                  !value.slug.contains('beta') &&
+                  value.latestFiles[latestFileIndex].gameVersion.isNotEmpty) {
+                CurrentAddons c = CurrentAddons(
+                    addonName: value.name,
+                    btnText: "",
+                    isUpdate: true,
+                    thumbnailUrl: thumbnailUrl,
+                    latestVersion: value.latestFiles[latestFileIndex].displayName,
+                    gameVersion: value.latestFiles[latestFileIndex].sortableGameVersion[0].gameVersion,
+                    source: "Curse",
+                    authors: value.authors[0].name,
+                    currentAddonGameVersion: currentGameVersion,
+                    filename: value.latestFiles[latestFileIndex].fileName);
+                if ((listOfAddons.indexWhere((element) => element.addonName == mainFolder) == -1)) {
                   listOfAddons.add(c);
                 }
               }
@@ -185,8 +234,8 @@ class _BodyState extends State<Body> {
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       child: DataTable(
-        sortAscending: true,
-        sortColumnIndex: 0,
+        sortAscending: sort,
+        sortColumnIndex: colIndex,
         showCheckboxColumn: false,
         dataRowHeight: 60,
         columnSpacing: MediaQuery.of(context).size.width * .05,
@@ -204,7 +253,41 @@ class _BodyState extends State<Body> {
             print(currentAddons);
             return DataRow(
               cells: [
-                DataCell(Text('$count - ${currentAddons.addonName}', overflow: TextOverflow.ellipsis)),
+                DataCell(
+                  SizedBox(
+                      child: Row(
+                    children: [
+                      Image.network(
+                        currentAddons.thumbnailUrl,
+                        height: 50,
+                        width: 50,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              currentAddons.addonName,
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              currentAddons.filename,
+                              //style: TextStyle(color: Colors.black87),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )),
+                  onTap: () {
+                    //launchInBrowser(addonData.websiteUrl);
+                  },
+                ),
+                //DataCell(Text('$count - ${currentAddons.addonName}', overflow: TextOverflow.ellipsis)),
                 DataCell(
                   currentAddons.isUpdate
                       ? FlatButton(
@@ -226,10 +309,10 @@ class _BodyState extends State<Body> {
                         )
                       : Text(currentAddons.btnText),
                 ),
-                DataCell(Text(currentAddons.addonName, overflow: TextOverflow.ellipsis)),
-                DataCell(Text(currentAddons.addonName, overflow: TextOverflow.ellipsis)),
-                DataCell(Text(currentAddons.addonName, overflow: TextOverflow.ellipsis)),
-                DataCell(Text(currentAddons.addonName, overflow: TextOverflow.ellipsis)),
+                DataCell(Text(currentAddons.latestVersion, overflow: TextOverflow.ellipsis)),
+                DataCell(Text(currentAddons.gameVersion, overflow: TextOverflow.ellipsis)),
+                DataCell(Text(currentAddons.source, overflow: TextOverflow.ellipsis)),
+                DataCell(Text(currentAddons.authors, overflow: TextOverflow.ellipsis)),
               ],
             );
           },

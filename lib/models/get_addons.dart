@@ -17,7 +17,7 @@ class GetAddons {
   // int status;
   // int primaryCategoryId;
   // CategorySection categorySection;
-  // String slug;
+  String slug;
   List<GameVersionLatestFiles> gameVersionLatestFiles;
   // bool isFeatured;
   // double popularityScore;
@@ -49,7 +49,7 @@ class GetAddons {
     // this.status,
     // this.primaryCategoryId,
     // this.categorySection,
-    // this.slug,
+    this.slug,
     this.gameVersionLatestFiles,
     // this.isFeatured,
     // this.popularityScore,
@@ -100,7 +100,7 @@ class GetAddons {
     // status = json['status'];
     // primaryCategoryId = json['primaryCategoryId'];
     // categorySection = json['categorySection'] != null ? new CategorySection.fromJson(json['categorySection']) : null;
-    // slug = json['slug'];
+    slug = json['slug'];
     if (json['gameVersionLatestFiles'] != null) {
       gameVersionLatestFiles = new List<GameVersionLatestFiles>();
       json['gameVersionLatestFiles'].forEach((v) {
@@ -147,7 +147,7 @@ class GetAddons {
     // if (this.categorySection != null) {
     //   data['categorySection'] = this.categorySection.toJson();
     // }
-    // data['slug'] = this.slug;
+    data['slug'] = this.slug;
     if (this.gameVersionLatestFiles != null) {
       data['gameVersionLatestFiles'] = this.gameVersionLatestFiles.map((v) => v.toJson()).toList();
     }
