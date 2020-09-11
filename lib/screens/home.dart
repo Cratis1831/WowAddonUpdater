@@ -1,9 +1,39 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:wow_addon_updater/models/github.dart';
 
 import './get_addons/get_addons_screen.dart';
 import './my_addons/my_addons_screen.dart';
 import './about/about_screen.dart';
 import './settings/settings_screen.dart';
+import 'package:http/http.dart' as http;
+import 'package:pubspec_yaml/pubspec_yaml.dart';
+
+Future<List<GitHub>> github() async {
+  final String _curseAddon = 'https://api.github.com/repos/asotoudeh18/WowAddonUpdater/releases';
+  final response = await http.get(_curseAddon, headers: {
+    HttpHeaders.authorizationHeader: 'TOKEN 090d303f97a815882701fb811fd92c3c35db45bb',
+    HttpHeaders.acceptHeader: 'application/vnd.github.v3+json'
+  });
+  List<GitHub> listOfAddons = List<GitHub>();
+  print(_curseAddon);
+
+  if (response.statusCode == 200) {
+    print('Git Success Success');
+    // If the server did return a 200 OK response,d
+    // then parse the JSON.
+
+    listOfAddons = (json.decode(response.body) as List).map((i) => GitHub.fromJson(i)).toList();
+
+    return listOfAddons;
+  } else {
+    // If the server did not return a 200 OK response,
+    // then throw an exception.
+    throw Exception(json.decode(response.body));
+  }
+}
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -12,12 +42,54 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   TabController _tabController;
+  Future<List<GitHub>> _github;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     _tabController = new TabController(length: 4, vsync: this);
+    _github = github();
+
+    Future.value(_github).then((githubReleases) {
+      final pubspecYaml = File('pubspec.yaml').readAsStringSync().toPubspecYaml();
+      String currentGithubVersion;
+      String appVersion;
+      pubspecYaml.version.map((f) {
+        appVersion = f.toString();
+      });
+
+      githubReleases.sort((b, a) => DateTime.parse(a.publishedAt).compareTo(DateTime.parse(b.publishedAt)));
+      currentGithubVersion = githubReleases[0].tagName; //newest tag
+
+      if (currentGithubVersion != appVersion) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("New version is available!"),
+              content: Text("v$currentGithubVersion"),
+              actions: [
+                FlatButton(
+                  child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  color: Theme.of(context).buttonColor,
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                FlatButton(
+                  child: Text("Close", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  color: Theme.of(context).buttonColor,
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                )
+              ],
+            );
+          },
+        );
+      }
+    });
   }
 
   @override

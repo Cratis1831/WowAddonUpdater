@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
-project(wow_addon_updater LANGUAGES CXX)
+project(WowAddonUpdater LANGUAGES CXX)
 
-set(BINARY_NAME "wow_addon_updater")
+set(BINARY_NAME "WowAddonUpdater")
 
 cmake_policy(SET CMP0063 NEW)
 

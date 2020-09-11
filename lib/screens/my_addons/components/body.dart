@@ -31,7 +31,7 @@ class _BodyState extends State<Body> {
         future: futureCurrentAddons,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            print(snapshot.data);
+            //print(snapshot.data);
             return Column(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -61,13 +61,12 @@ class _BodyState extends State<Body> {
     final String _curseAddon = 'https://addons-ecs.forgesvc.net/api/v2/addon/search?gameId=1&categoryId=0&searchFilter=${Uri.parse(addonName)}';
     final response = await http.get(_curseAddon);
     List<GetAddons> listOfAddons;
-    print(_curseAddon);
+    //print(_curseAddon);
 
     if (response.statusCode == 200) {
       print('Curse Success');
       // If the server did return a 200 OK response,d
       // then parse the JSON.
-
       if ((json.decode(response.body) as List).map((i) => GetAddons.fromJson(i)).toList().isNotEmpty) {
         listOfAddons = (json.decode(response.body) as List).map((i) => GetAddons.fromJson(i)).toList();
         return listOfAddons;
@@ -103,7 +102,7 @@ class _BodyState extends State<Body> {
     lines.forEach((line) {
       if (line.contains("SET lastAddonVersion ")) {
         currentGameVersion = line.split("SET lastAddonVersion ")[1].replaceAll("\"", '');
-        print('currentGameVersion: $currentGameVersion');
+        //print('currentGameVersion: $currentGameVersion');
       }
     });
 
@@ -142,7 +141,7 @@ class _BodyState extends State<Body> {
               } else {
                 if (tempaddonTitleNameFromToc != addonFolderName) {
                   if (addonFolderName != "" && !addonFolderName.contains("|c")) {
-                    print(addonFolderName);
+                    //print(addonFolderName);
                     addonSearchQuery.add(addonFolderName.replaceAll(new RegExp(r'[^\w\s]+'), ''));
                   }
                   addonFolderName = tempaddonTitleNameFromToc;
@@ -171,7 +170,7 @@ class _BodyState extends State<Body> {
           //print('latestFileIndex: $latestFileIndex');
           if (latestFileIndex != -1) {
             latestModuleIndex = value.latestFiles[latestFileIndex].modules.indexWhere((element) => (element.type == 3));
-            print('latestModuleIndex: $latestModuleIndex');
+            //print('latestModuleIndex: $latestModuleIndex');
             if (latestModuleIndex != -1) {
               var foundAddonIndex = addonSearchQuery.indexWhere(
                   (element) => (element == value.name || element == value.latestFiles[latestFileIndex].modules[latestModuleIndex].foldername));
@@ -199,7 +198,7 @@ class _BodyState extends State<Body> {
               //   print('Missing Authors: ${value.name}');
               // }
 
-              print('mainFolder: $mainFolder - $foundAddon');
+              //print('mainFolder: $mainFolder - $foundAddon');
               if ((mainFolder == foundAddon || value.name == foundAddon) &&
                   !value.slug.contains('beta') &&
                   value.latestFiles[latestFileIndex].gameVersion.isNotEmpty) {
@@ -249,7 +248,7 @@ class _BodyState extends State<Body> {
         rows: snapshot.map(
           (currentAddons) {
             count += 1;
-            print(currentAddons);
+            //print(currentAddons);
             return DataRow(
               cells: [
                 DataCell(
