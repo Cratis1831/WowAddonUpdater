@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:wow_addon_updater/models/get_addons.dart';
+import '../../../models/get_addons.dart';
 
 Future<List<GetAddons>> fetchCurseData() async {
   final String _curseAddon = 'https://addons-ecs.forgesvc.net/api/v2/addon/search?gameId=1&pageSize=25&sort=0';

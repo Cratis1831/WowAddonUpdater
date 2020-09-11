@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:wow_addon_updater/models/download_file.dart';
+import '../../models/download_file.dart';
 import '../../models/get_addons.dart';
-import 'components/functions.dart';
+import './components/functions.dart';
 
 class GetAddonsScreen extends StatefulWidget {
   @override

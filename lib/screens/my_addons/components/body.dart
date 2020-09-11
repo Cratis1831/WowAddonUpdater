@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
-
 import 'package:flutter/material.dart';
-import 'package:wow_addon_updater/config.dart';
-import 'package:wow_addon_updater/models/current_addons.dart';
-import 'package:wow_addon_updater/models/get_addons.dart';
 import 'package:http/http.dart' as http;
+
+import '../../../models/current_addons.dart';
+import '../../../models/get_addons.dart';
 
 class Body extends StatefulWidget {
   @override
