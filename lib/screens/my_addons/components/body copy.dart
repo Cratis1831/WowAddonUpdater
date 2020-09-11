@@ -15,9 +15,8 @@ class Body extends StatefulWidget {
 }
 
 class _BodyState extends State<Body> {
-  bool sort = true;
-  int colIndex = 0;
   Future<List<CurrentAddons>> futureCurrentAddons;
+
   @override
   void initState() {
     // TODO: implement initState
@@ -58,8 +57,8 @@ class _BodyState extends State<Body> {
     );
   }
 
-  Future<List<GetAddons>> fetchAddonInfo(String addonName) async {
-    final String _curseAddon = 'https://addons-ecs.forgesvc.net/api/v2/addon/search?gameId=1&categoryId=0&searchFilter=${Uri.parse(addonName)}';
+  Future<GetAddons> fetchAddonInfo(String addonName) async {
+    final String _curseAddon = 'https://addons-ecs.forgesvc.net/api/v2/addon/search?gameId=1&categoryId=0&searchFilter=$addonName';
     final response = await http.get(_curseAddon);
     List<GetAddons> listOfAddons;
     print(_curseAddon);
@@ -71,7 +70,7 @@ class _BodyState extends State<Body> {
 
       if ((json.decode(response.body) as List).map((i) => GetAddons.fromJson(i)).toList().isNotEmpty) {
         listOfAddons = (json.decode(response.body) as List).map((i) => GetAddons.fromJson(i)).toList();
-        return listOfAddons;
+        return listOfAddons[0];
       } else {
         return null;
       }
@@ -82,26 +81,14 @@ class _BodyState extends State<Body> {
     }
   }
 
-  onSortColumn(int columnIndex, bool ascending, List<CurrentAddons> snapshot) {
-    if (columnIndex >= 0) {
-      if (ascending) {
-        snapshot.sort((a, b) => a.addonName.compareTo(b.addonName));
-      } else {
-        snapshot.sort((a, b) => b.addonName.compareTo(a.addonName));
-      }
-    }
-  }
-
   Future<List<CurrentAddons>> fetchCurrentAddons() async {
     Directory retail = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\Interface\Addons\");
     List<CurrentAddons> listOfAddons = List<CurrentAddons>();
-    List<String> addonSearchQuery = List<String>();
 
     await retail.list().toList().then((value) async {
-      String addonFolderName;
       for (var item in value) {
         if (item.toString().split(":")[0] == "Directory") {
-          addonFolderName = path.basename(item.path);
+          String addonFolderName = path.basename(item.path);
           // String addonTitleNameFromToc = "";
           String tempaddonTitleNameFromToc = "";
           String tempDependencies = "";
@@ -115,67 +102,47 @@ class _BodyState extends State<Body> {
               if (line.contains("## Title: ")) {
                 findTitle = true;
                 tempaddonTitleNameFromToc = line.split("Title: ")[1];
-                //print('toc title: $tempaddonTitleNameFromToc');
+                print('toc title: $tempaddonTitleNameFromToc');
               }
               if (line.contains("## Dependencies: ")) {
                 findDependencies = true;
                 tempDependencies = line.split("Dependencies: ")[1];
-                //print('toc dep: $tempDependencies');
+                print('toc dep: $tempDependencies');
               }
               if (findDependencies) {
                 //addonTitleNameFromToc = tempDependencies;
                 addonFolderName = tempDependencies;
               } else {
-                if (tempaddonTitleNameFromToc != addonFolderName) {
-                  if (addonFolderName != "" && !addonFolderName.contains("|c")) {
-                    print(addonFolderName);
-                    addonSearchQuery.add(addonFolderName.replaceAll(new RegExp(r'[^\w\s]+'), ''));
-                  }
-                  addonFolderName = tempaddonTitleNameFromToc;
-                }
+                addonFolderName = tempaddonTitleNameFromToc;
               }
             },
           );
-        }
-        if (addonFolderName != "" && !addonFolderName.contains("|c")) {
-          print(addonFolderName);
-          addonSearchQuery.add(addonFolderName.replaceAll(new RegExp(r'[^\w\s]+'), ''));
-        }
-      }
-    });
-    //print(addonSearchQuery.join(","));
-    //print('now: $addonFolderName');
-    // await fetchAddonInfo(addonName.substring(0, 6)).then((value) {
-    await fetchAddonInfo(addonSearchQuery.join(",")).then((data) {
-      if (data != null) {
-        for (var value in data) {
-          //print('name: ${value.name}');
-          String foundAddon;
-          var foundAddonIndex =
-              addonSearchQuery.indexWhere((element) => (element == value.name || element == value.latestFiles[0].modules[0].foldername));
-          if (foundAddonIndex != -1) foundAddon = addonSearchQuery[foundAddonIndex];
-
-          int latestFileIndex = value.latestFiles.indexWhere((element) => element.releaseType == 1 && !element.displayName.contains('-classic'));
-          print('latestFileIndex: $latestFileIndex');
-          if (latestFileIndex != -1) {
-            int latestModuleIndex =
-                value.latestFiles[latestFileIndex].modules.indexWhere((element) => (element.foldername == foundAddon && element.type == 3));
-            print('latestModuleIndex: $latestModuleIndex');
-            if (latestModuleIndex != -1) {
-              String mainFolder = value.latestFiles[latestFileIndex].modules[latestModuleIndex].foldername;
-              print('mainFolder: $mainFolder - $foundAddon');
-              if (mainFolder == foundAddon || value.name == foundAddon) {
-                CurrentAddons c = CurrentAddons(addonName: mainFolder, btnText: "", isUpdate: true);
-                if (listOfAddons.indexWhere((element) => element.addonName == mainFolder) == -1) {
-                  listOfAddons.add(c);
+          print('now: $addonFolderName');
+          // await fetchAddonInfo(addonName.substring(0, 6)).then((value) {
+          if (listOfAddons.indexWhere((element) => element.addonName == tempaddonTitleNameFromToc) == -1) {
+            await fetchAddonInfo(addonFolderName).then((value) {
+              if (value != null) {
+                int latestFileIndex =
+                    value.latestFiles.indexWhere((element) => element.releaseType == 1 && !element.displayName.contains('-classic'));
+                print('latestFileIndex: $latestFileIndex');
+                if (latestFileIndex != -1) {
+                  int latestModuleIndex = value.latestFiles[latestFileIndex].modules.indexWhere((element) => element.foldername == addonFolderName);
+                  print('latestModuleIndex: $latestModuleIndex');
+                  if (latestModuleIndex != -1) {
+                    String mainFolder = value.latestFiles[latestFileIndex].modules[latestModuleIndex].foldername;
+                    print('mainFolder: $mainFolder');
+                    if (mainFolder == addonFolderName && mainFolder != tempDependencies) {
+                      CurrentAddons c = CurrentAddons(addonName: addonFolderName, btnText: "", isUpdate: true);
+                      listOfAddons.add(c);
+                    }
+                  }
                 }
               }
-            }
+            });
           }
         }
       }
     });
-
     //print(listOfAddons);
     return listOfAddons;
   }
@@ -246,11 +213,11 @@ class _BodyState extends State<Body> {
           overflow: TextOverflow.ellipsis,
         ),
         onSort: (columnIndex, sortAscending) {
-          setState(() {
-            sort = !sort;
-            colIndex = 0;
-          });
-          onSortColumn(colIndex, sort, snapshot);
+          // setState(() {
+          //   sort = !sort;
+          //   colIndex = 0;
+          // });
+          // onSortColumn(colIndex, sort, snapshot);
         });
   }
 }
