@@ -29,4 +29,4 @@ jobs:
           vt_api_key: a6a747c6d5855803835fc51a116665655adac7e091f00bd49e11f37bc2da4fb0
           vt_monitor: true
           files: |
-            ./*.zip:  
+            ./releases/*.zip:  
