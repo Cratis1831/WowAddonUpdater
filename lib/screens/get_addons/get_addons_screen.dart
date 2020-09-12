@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../models/download_file.dart';
+import '../../components/download_file.dart';
 import '../../models/get_addons.dart';
 import './components/functions.dart';
 

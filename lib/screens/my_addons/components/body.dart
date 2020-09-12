@@ -91,8 +91,8 @@ class _BodyState extends State<Body> {
   }
 
   Future<List<CurrentAddons>> fetchCurrentAddons() async {
-    Directory retail = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\Interface\Addons\");
-    Directory config = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\");
+    Directory retail = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail1_\Interface\Addons\");
+    Directory config = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail1_\");
     List<CurrentAddons> listOfAddons = List<CurrentAddons>();
     List<String> addonSearchQuery = List<String>();
     String currentGameVersion;

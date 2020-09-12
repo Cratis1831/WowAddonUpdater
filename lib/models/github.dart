@@ -13,7 +13,7 @@ class GitHub {
   // bool prerelease;
   // String createdAt;
   String publishedAt;
-  // List<Assets> assets;
+  List<Assets> assets;
   // String tarballUrl;
   // String zipballUrl;
   // String body;
@@ -33,7 +33,7 @@ class GitHub {
     // this.prerelease,
     // this.createdAt,
     this.publishedAt,
-    // this.assets,
+    this.assets,
     // this.tarballUrl,
     // this.zipballUrl,
     // this.body,
@@ -54,12 +54,12 @@ class GitHub {
     // prerelease = json['prerelease'];
     // createdAt = json['created_at'];
     publishedAt = json['published_at'];
-    // if (json['assets'] != null) {
-    //   assets = new List<Assets>();
-    //   json['assets'].forEach((v) {
-    //     assets.add(new Assets.fromJson(v));
-    //   });
-    // }
+    if (json['assets'] != null) {
+      assets = new List<Assets>();
+      json['assets'].forEach((v) {
+        assets.add(new Assets.fromJson(v));
+      });
+    }
     // tarballUrl = json['tarball_url'];
     // zipballUrl = json['zipball_url'];
     // body = json['body'];
@@ -83,9 +83,9 @@ class GitHub {
     // data['prerelease'] = this.prerelease;
     // data['created_at'] = this.createdAt;
     data['published_at'] = this.publishedAt;
-    // if (this.assets != null) {
-    //   data['assets'] = this.assets.map((v) => v.toJson()).toList();
-    // }
+    if (this.assets != null) {
+      data['assets'] = this.assets.map((v) => v.toJson()).toList();
+    }
     // data['tarball_url'] = this.tarballUrl;
     // data['zipball_url'] = this.zipballUrl;
     // data['body'] = this.body;

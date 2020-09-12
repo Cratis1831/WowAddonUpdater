@@ -2,21 +2,22 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:wow_addon_updater/models/github.dart';
+import 'package:http/http.dart' as http;
+import 'package:wow_addon_updater/components/download_file.dart';
+import 'package:wow_addon_updater/env.dart';
 
+import '../models/github.dart';
 import './get_addons/get_addons_screen.dart';
 import './my_addons/my_addons_screen.dart';
 import './about/about_screen.dart';
 import './settings/settings_screen.dart';
-import 'package:http/http.dart' as http;
-import 'package:pubspec_yaml/pubspec_yaml.dart';
+
+import '../config.dart';
 
 Future<List<GitHub>> github() async {
   final String _curseAddon = 'https://api.github.com/repos/asotoudeh18/WowAddonUpdater/releases';
-  final response = await http.get(_curseAddon, headers: {
-    HttpHeaders.authorizationHeader: 'TOKEN 090d303f97a815882701fb811fd92c3c35db45bb',
-    HttpHeaders.acceptHeader: 'application/vnd.github.v3+json'
-  });
+  final response = await http
+      .get(_curseAddon, headers: {HttpHeaders.authorizationHeader: 'TOKEN $gitHubApi', HttpHeaders.acceptHeader: 'application/vnd.github.v3+json'});
   List<GitHub> listOfAddons = List<GitHub>();
   print(_curseAddon);
 
@@ -52,12 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _github = github();
 
     Future.value(_github).then((githubReleases) {
-      final pubspecYaml = File('pubspec.yaml').readAsStringSync().toPubspecYaml();
       String currentGithubVersion;
-      String appVersion;
-      pubspecYaml.version.map((f) {
-        appVersion = f.toString();
-      });
 
       githubReleases.sort((b, a) => DateTime.parse(a.publishedAt).compareTo(DateTime.parse(b.publishedAt)));
       currentGithubVersion = githubReleases[0].tagName; //newest tag
@@ -74,7 +70,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                   color: Theme.of(context).buttonColor,
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    print(githubReleases[0].assets[0].browserDownloadUrl);
+                    downloadFile(githubReleases[0].assets[0].browserDownloadUrl);
                   },
                 ),
                 FlatButton(

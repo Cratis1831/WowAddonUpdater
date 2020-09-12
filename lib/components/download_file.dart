@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:archive/archive.dart';
@@ -32,6 +31,7 @@ Future<String> downloadFile(String url, {String filename}) async {
   var response = httpClient.send(request);
   if (filename == null) {
     filename = basename(Uri.parse(url).path);
+    print(filename);
   }
   String dir = r"C:\Program Files (x86)\World of Warcraft\_retail_\dump\";
 
@@ -42,14 +42,17 @@ Future<String> downloadFile(String url, {String filename}) async {
     r.stream.listen((List<int> chunk) {
       // Display percentage of completion
       //print('downloadPercentage: ${downloaded / r.contentLength * 100}');
-
       chunks.add(chunk);
       downloaded += chunk.length;
       //Text(key: )
-      return 'downloadPercentage: ${downloaded / r.contentLength * 100}';
+      return 'downloadPercentage ondata: ${downloaded / r.contentLength * 100}';
+    }, onError: (r) async {
+      print('re: ${r.reasonPhrase}');
+      return;
     }, onDone: () async {
       // Display percentage of completion
-      //print('downloadPercentage: ${downloaded / r.contentLength * 100}');
+      print('downloadPercentage ondone: ${downloaded / r.contentLength * 100}');
+      print('ra: ${r.reasonPhrase}');
 
       // Save the file
       File file = new File('$dir/$filename');
@@ -60,7 +63,7 @@ Future<String> downloadFile(String url, {String filename}) async {
         offset += chunk.length;
       }
       await file.writeAsBytes(bytes);
-      await unzipFile(dir, filename);
+      //await unzipFile(dir, filename);
 
       return "Done";
     });
