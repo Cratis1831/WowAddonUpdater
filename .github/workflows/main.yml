@@ -1,8 +1,7 @@
-name: released
+name: VirusTotal
 
 on:
   release:
-    types: [published]
 
 jobs:
   virustotal:
