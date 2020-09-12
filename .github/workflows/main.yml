@@ -16,8 +16,6 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v2
       -
-        name: Build
-      -
         name: VirusTotal Scan
         uses: crazy-max/ghaction-virustotal@v2
         with:
