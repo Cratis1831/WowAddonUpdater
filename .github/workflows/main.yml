@@ -1,7 +1,11 @@
 name: build
 
 on:
+  pull_request:
+  push:
   release:
+    types: [published]
+    
 jobs:
   build:
     runs-on: ubuntu-latest
