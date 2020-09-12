@@ -16,4 +16,4 @@ jobs:
           vt_monitor: true  
           github_token: ${{ github.token }}
           files: |
-            *.exe
+            *.zip
