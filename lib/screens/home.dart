@@ -5,14 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:wow_addon_updater/components/download_file.dart';
 import 'package:wow_addon_updater/env.dart';
+import 'package:path/path.dart' as path;
 
 import '../models/github.dart';
 import './get_addons/get_addons_screen.dart';
 import './my_addons/my_addons_screen.dart';
 import './about/about_screen.dart';
 import './settings/settings_screen.dart';
-
 import '../config.dart';
+
+import 'package:process_run/shell.dart';
 
 Future<List<GitHub>> github() async {
   final String _curseAddon = 'https://api.github.com/repos/asotoudeh18/WowAddonUpdater/releases';
@@ -64,14 +66,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           builder: (BuildContext context) {
             return AlertDialog(
               title: Text("New version is available!"),
-              content: Text("v$currentGithubVersion"),
+              content: Text("$currentGithubVersion"),
               actions: [
                 FlatButton(
                   child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                   color: Theme.of(context).buttonColor,
-                  onPressed: () {
-                    print(githubReleases[0].assets[0].browserDownloadUrl);
-                    downloadFile(githubReleases[0].assets[0].browserDownloadUrl);
+                  onPressed: () async {
+                    String fileUrl = githubReleases[0].assets[0].browserDownloadUrl;
+                    String currentDirectory = Directory.current.path;
+                    print(currentDirectory);
+                    print(fileUrl);
+                    await downloadFile(true, '$currentDirectory\\update\\', currentDirectory, fileUrl).then((value) async {
+                      if (value == 0) {
+                        Navigator.of(context).pop();
+                        //var shell = Shell();
+                        //await Process.run('echo', ['%cd%'], runInShell: true, stdoutEncoding: systemEncoding).then((value) async {
+                        //String currentDir = value.stdout;
+                        //await unzipFile('$currentDirectory\\', '$currentDirectory\\update\\', path.basename(Uri.parse(fileUrl).path)).then((value) {
+
+                        //});
+                        //});
+                      }
+                    });
                   },
                 ),
                 FlatButton(
