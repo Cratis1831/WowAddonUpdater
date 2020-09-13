@@ -31,8 +31,11 @@
 .pub/
 /build/
 
-#ENV Data
+#ENV Data and update package
+/update/
 lib/env.dart
+*.dll
+*.exe
 
 # Web related
 lib/generated_plugin_registrant.dart
