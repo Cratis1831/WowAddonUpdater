@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:wow_addon_updater/config.dart';
 import '../../components/download_file.dart';
@@ -133,7 +134,14 @@ class _GetAddonsScreenState extends State<GetAddonsScreen> {
                         child: Text("Download", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                         color: Theme.of(context).buttonColor,
                         onPressed: () {
-                          downloadFile(true, defaultWowDir, r'dump\', addonData.latestFiles[_latestVersion].downloadUrl);
+                          var dio = Dio();
+                          downloadUpdate(
+                            isUnzip: true,
+                            isAppUpdate: false,
+                            dio: dio,
+                            url: addonData.latestFiles[_latestVersion].downloadUrl,
+                            savePath: '$defaultWowDir\\dump\\',
+                          );
 
                           setState(() {
                             addonData.isUpdate = !addonData.isUpdate;

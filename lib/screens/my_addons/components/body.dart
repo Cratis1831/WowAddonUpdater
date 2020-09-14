@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:wow_addon_updater/components/download_file.dart';
 
+import '../../../config.dart';
 import '../../../models/current_addons.dart';
 import '../../../models/get_addons.dart';
 
@@ -25,6 +28,12 @@ class _BodyState extends State<Body> {
   }
 
   @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Center(
       child: FutureBuilder(
@@ -33,9 +42,10 @@ class _BodyState extends State<Body> {
           if (snapshot.hasData) {
             //print(snapshot.data);
             return Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              verticalDirection: VerticalDirection.down,
+              //mainAxisSize: MainAxisSize.max,
+              //mainAxisAlignment: MainAxisAlignment.center,
+              //verticalDirection: VerticalDirection.down,
+
               children: <Widget>[
                 Expanded(
                   child: Container(
@@ -91,8 +101,8 @@ class _BodyState extends State<Body> {
   }
 
   Future<List<CurrentAddons>> fetchCurrentAddons() async {
-    Directory retail = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail1_\Interface\Addons\");
-    Directory config = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail1_\");
+    Directory retail = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\Interface\Addons\");
+    Directory config = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\");
     List<CurrentAddons> listOfAddons = List<CurrentAddons>();
     List<String> addonSearchQuery = List<String>();
     String currentGameVersion;
@@ -203,16 +213,18 @@ class _BodyState extends State<Body> {
                   !value.slug.contains('beta') &&
                   value.latestFiles[latestFileIndex].gameVersion.isNotEmpty) {
                 CurrentAddons c = CurrentAddons(
-                    addonName: value.name,
-                    btnText: "",
-                    isUpdate: true,
-                    thumbnailUrl: thumbnailUrl,
-                    latestVersion: value.latestFiles[latestFileIndex].displayName,
-                    gameVersion: value.latestFiles[latestFileIndex].sortableGameVersion[0].gameVersion,
-                    source: "Curse",
-                    authors: value.authors[0].name,
-                    currentAddonGameVersion: currentGameVersion,
-                    filename: value.latestFiles[latestFileIndex].fileName);
+                  addonName: value.name,
+                  btnText: "",
+                  isUpdate: true,
+                  thumbnailUrl: thumbnailUrl,
+                  latestVersion: value.latestFiles[latestFileIndex].displayName,
+                  gameVersion: value.latestFiles[latestFileIndex].sortableGameVersion[0].gameVersion,
+                  source: "Curse",
+                  authors: value.authors[0].name,
+                  currentAddonGameVersion: currentGameVersion,
+                  filename: value.latestFiles[latestFileIndex].fileName,
+                  downloadUrl: value.latestFiles[latestFileIndex].downloadUrl,
+                );
                 if ((listOfAddons.indexWhere((element) => element.addonName == mainFolder) == -1)) {
                   listOfAddons.add(c);
                 }
@@ -231,90 +243,136 @@ class _BodyState extends State<Body> {
     int count = 0;
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
-      child: DataTable(
-        sortAscending: sort,
-        sortColumnIndex: colIndex,
-        showCheckboxColumn: false,
-        dataRowHeight: 60,
-        columnSpacing: MediaQuery.of(context).size.width * .05,
-        columns: [
-          buildDataColumn(snapshot, "Addon"),
-          buildDataColumn(snapshot, "Status"),
-          buildDataColumn(snapshot, "Latest Version"),
-          buildDataColumn(snapshot, "Game Version"),
-          buildDataColumn(snapshot, "Source"),
-          buildDataColumn(snapshot, "Author"),
-        ],
-        rows: snapshot.map(
-          (currentAddons) {
-            count += 1;
-            //print(currentAddons);
-            return DataRow(
-              cells: [
-                DataCell(
-                  SizedBox(
-                      child: Row(
-                    children: [
-                      Image.network(
-                        currentAddons.thumbnailUrl,
-                        height: 50,
-                        width: 50,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              currentAddons.addonName,
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              FlatButton(
+                child: Text("Update All", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                color: Theme.of(context).buttonColor,
+                onPressed: () {
+                  for (var addon in snapshot) {
+                    setState(() {
+                      addon.isUpdate = !addon.isUpdate;
+                      addon.btnText = "Downloading...";
+                    });
+                    Future.delayed(Duration(seconds: 1)).then((value) {
+                      setState(() {
+                        //downloadFile(currentAddons.latestFiles[_latestVersion].downloadUrl);
+                        addon.btnText = "Up to date";
+                      });
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          DataTable(
+            sortAscending: sort,
+            sortColumnIndex: colIndex,
+            showCheckboxColumn: false,
+            dataRowHeight: 60,
+            columnSpacing: MediaQuery.of(context).size.width * .095,
+            columns: [
+              buildDataColumn(snapshot, "Addon"),
+              buildDataColumn(snapshot, "Status"),
+              buildDataColumn(snapshot, "Latest Version"),
+              buildDataColumn(snapshot, "Game Version"),
+              buildDataColumn(snapshot, "Source"),
+              buildDataColumn(snapshot, "Author"),
+            ],
+            rows: snapshot.map(
+              (currentAddons) {
+                count += 1;
+                //print(currentAddons);
+                return DataRow(
+                  cells: [
+                    DataCell(
+                      SizedBox(
+                          child: Row(
+                        children: [
+                          Image.network(
+                            currentAddons.thumbnailUrl,
+                            height: 50,
+                            width: 50,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 5),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  currentAddons.addonName,
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  currentAddons.filename,
+                                  //style: TextStyle(color: Colors.black87),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                            Text(
-                              currentAddons.filename,
-                              //style: TextStyle(color: Colors.black87),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )),
-                  onTap: () {
-                    //launchInBrowser(addonData.websiteUrl);
-                  },
-                ),
-                //DataCell(Text('$count - ${currentAddons.addonName}', overflow: TextOverflow.ellipsis)),
-                DataCell(
-                  currentAddons.isUpdate
-                      ? FlatButton(
-                          child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                          color: Theme.of(context).buttonColor,
-                          onPressed: () {
-                            //downloadFile(currentAddons.latestFiles[_latestVersion].downloadUrl);
+                          ),
+                        ],
+                      )),
+                      onTap: () {
+                        //launchInBrowser(addonData.websiteUrl);
+                      },
+                    ),
+                    //DataCell(Text('$count - ${currentAddons.addonName}', overflow: TextOverflow.ellipsis)),
+                    DataCell(
+                      currentAddons.isUpdate
+                          ? FlatButton(
+                              child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                              color: Theme.of(context).buttonColor,
+                              onPressed: () {
+                                setState(() {
+                                  currentAddons.isUpdate = !currentAddons.isUpdate;
+                                  currentAddons.btnText = "Downloading...";
+                                });
+                                print(currentAddons.downloadUrl);
+                                var dio = Dio();
+                                String currentDirectory = Directory.current.path;
 
-                            setState(() {
-                              currentAddons.isUpdate = !currentAddons.isUpdate;
-                              currentAddons.btnText = "Downloading...";
-                            });
-                            Timer(Duration(seconds: 1), () {
-                              setState(() {
-                                currentAddons.btnText = "Up to date";
-                              });
-                            });
-                          },
-                        )
-                      : Text(currentAddons.btnText),
-                ),
-                DataCell(Text(currentAddons.latestVersion, overflow: TextOverflow.ellipsis)),
-                DataCell(Text(currentAddons.gameVersion, overflow: TextOverflow.ellipsis)),
-                DataCell(Text(currentAddons.source, overflow: TextOverflow.ellipsis)),
-                DataCell(Text(currentAddons.authors, overflow: TextOverflow.ellipsis)),
-              ],
-            );
-          },
-        ).toList(),
+                                //downloadFile(false, true, '$defaultWowDir\\dump\\', '$defaultWowDir\\dump\\', currentAddons.downloadUrl)
+                                downloadUpdate(
+                                  isUnzip: true,
+                                  isAppUpdate: false,
+                                  dio: dio,
+                                  url: currentAddons.downloadUrl,
+                                  savePath: '$defaultWowDir\\dump\\',
+                                ).then((value) {
+                                  String newBtnText;
+                                  if (value == 'OK') {
+                                    newBtnText = 'Up to date';
+                                  } else {
+                                    newBtnText = value;
+                                  }
+                                  setState(() {
+                                    //currentAddons.isUpdate = !currentAddons.isUpdate;
+                                    currentAddons.btnText = newBtnText;
+                                  });
+                                });
+                              },
+                            )
+                          : SizedBox(
+                              child: Text(currentAddons.btnText),
+                              // width: MediaQuery.of(context).size.width * 0.1,
+                            ),
+                    ),
+                    DataCell(Text(currentAddons.latestVersion, overflow: TextOverflow.ellipsis)),
+                    DataCell(Text(currentAddons.gameVersion, overflow: TextOverflow.ellipsis)),
+                    DataCell(Text(currentAddons.source, overflow: TextOverflow.ellipsis)),
+                    DataCell(Text(currentAddons.authors, overflow: TextOverflow.ellipsis)),
+                  ],
+                );
+              },
+            ).toList(),
+          ),
+        ],
       ),
     );
   }

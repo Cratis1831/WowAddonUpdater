@@ -29,7 +29,7 @@ dependencies:
   oauth2: ^1.6.1
   process_run: ^0.10.12+3
   archive: ^2.0.13
-  
+  dio: ^3.0.10
   window_size:
     git:
       url: git://github.com/google/flutter-desktop-embedding.git

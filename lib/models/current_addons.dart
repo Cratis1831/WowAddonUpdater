@@ -10,6 +10,7 @@ class CurrentAddons {
   String filename;
   String currentAddonGameVersion;
   String slug;
+  String downloadUrl;
 
   CurrentAddons({
     this.btnText,
@@ -23,5 +24,6 @@ class CurrentAddons {
     this.filename,
     this.currentAddonGameVersion,
     this.slug,
+    this.downloadUrl,
   });
 }

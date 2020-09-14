@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:wow_addon_updater/components/download_file.dart';
@@ -52,41 +53,51 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     // TODO: implement initState
     super.initState();
     _tabController = new TabController(length: 4, vsync: this);
-    _github = github();
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    _github = github();
     Future.value(_github).then((githubReleases) {
       String currentGithubVersion;
 
       githubReleases.sort((b, a) => DateTime.parse(a.publishedAt).compareTo(DateTime.parse(b.publishedAt)));
       currentGithubVersion = githubReleases[0].tagName; //newest tag
-
-      if (currentGithubVersion != appVersion) {
+      print('git: $currentGithubVersion - app: v$appVersion');
+      if (currentGithubVersion != 'v$appVersion') {
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text("New version is available!"),
-              content: Text("$currentGithubVersion"),
+              title: Text("WoW Addon Updater $currentGithubVersion is available!"),
+              content: RichText(text: TextSpan(text: "Note: Update will taken moment to download and install")),
               actions: [
                 FlatButton(
-                  child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: Text("Update & Restart", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                   color: Theme.of(context).buttonColor,
-                  onPressed: () async {
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text("Updating, Please wait..."),
+                            content: SingleChildScrollView(child: LinearProgressIndicator()),
+                          );
+                        });
                     String fileUrl = githubReleases[0].assets[0].browserDownloadUrl;
                     String currentDirectory = Directory.current.path;
                     print(currentDirectory);
                     print(fileUrl);
-                    await downloadFile(true, '$currentDirectory\\update\\', currentDirectory, fileUrl).then((value) async {
-                      if (value == 0) {
-                        Navigator.of(context).pop();
-                        //var shell = Shell();
-                        //await Process.run('echo', ['%cd%'], runInShell: true, stdoutEncoding: systemEncoding).then((value) async {
-                        //String currentDir = value.stdout;
-                        //await unzipFile('$currentDirectory\\', '$currentDirectory\\update\\', path.basename(Uri.parse(fileUrl).path)).then((value) {
-
-                        //});
-                        //});
-                      }
+                    var dio = Dio();
+                    Future.delayed(Duration(seconds: 3)).then((value) {
+                      downloadUpdate(
+                        isUnzip: true,
+                        isAppUpdate: true,
+                        dio: dio,
+                        url: fileUrl,
+                        savePath: '$currentDirectory\\update\\',
+                      );
                     });
                   },
                 ),
@@ -96,22 +107,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                )
+                ),
               ],
             );
           },
         );
       }
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).primaryColor,
         textTheme: Theme.of(context).textTheme,
-        title: Text('WoW Addon Updater'),
+        title: Text('WoW Addon Updater v$appVersion'),
         bottom: TabBar(
           controller: _tabController,
           unselectedLabelColor: Theme.of(context).tabBarTheme.unselectedLabelColor,

@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:window_size/window_size.dart';
 import './screens/home.dart';
+import 'config.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,16 @@ void main() {
       setWindowTitle('WoW Addon Updater');
     }
   });
+
+  var updaterFile = File('update.bat');
+
+  if (updaterFile.existsSync()) {
+    try {
+      updaterFile.deleteSync();
+    } catch (e) {
+      print(e.toString());
+    }
+  }
 
   runApp(new MyApp());
 }
