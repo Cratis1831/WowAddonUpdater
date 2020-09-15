@@ -1,5 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
-const appVersion = '1.0.1';
+import 'models/config.dart';
+
+const appVersion = '1.0.2';
 const defaultButtonColour = Colors.deepPurple;
-const defaultWowDir = r"C:\Program Files (x86)\World of Warcraft\_retail_\";
+String currentDirectory = Directory.current.path;
+Map<String, dynamic> x = jsonDecode(new File('$currentDirectory\\settings.json').readAsStringSync());
+Config cfg = Config.fromJson(x);
+
+String defaultWowDir = cfg.wowRetailFolder;

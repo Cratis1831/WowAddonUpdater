@@ -18,7 +18,7 @@ class Body extends StatefulWidget {
 
 class _BodyState extends State<Body> {
   bool sort = true;
-  int colIndex = 0;
+  int colIndex = 1;
   Future<List<CurrentAddons>> futureCurrentAddons;
   @override
   void initState() {
@@ -58,6 +58,7 @@ class _BodyState extends State<Body> {
               ],
             );
           } else if (snapshot.hasError) {
+            print(snapshot.error);
             return Text("ERROR:  ${snapshot.error}");
           }
           // By default, show a loading spinner.
@@ -91,142 +92,144 @@ class _BodyState extends State<Body> {
   }
 
   onSortColumn(int columnIndex, bool ascending, List<CurrentAddons> snapshot) {
-    if (columnIndex >= 0) {
+    if (columnIndex == 0) {
       if (ascending) {
         snapshot.sort((a, b) => a.addonName.compareTo(b.addonName));
       } else {
         snapshot.sort((a, b) => b.addonName.compareTo(a.addonName));
       }
     }
+    if (columnIndex == 1) {
+      if (ascending) {
+        snapshot.sort((a, b) => a.isUpdated.toString().compareTo(b.isUpdated.toString()));
+      } else {
+        snapshot.sort((a, b) => b.isUpdated.toString().compareTo(a.isUpdated.toString()));
+      }
+    }
   }
 
   Future<List<CurrentAddons>> fetchCurrentAddons() async {
-    Directory retail = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\Interface\Addons\");
-    Directory config = Directory(r"C:\Program Files (x86)\World of Warcraft\_retail_\");
-    List<CurrentAddons> listOfAddons = List<CurrentAddons>();
+    Directory retail = Directory('$defaultWowDir\\Interface\\Addons\\');
+    List<CurrentAddons> addonsMasterList = List<CurrentAddons>();
+    List<CurrentAddons> onPCAddons = List<CurrentAddons>();
     List<String> addonSearchQuery = List<String>();
-    String currentGameVersion;
-
-    final file = new File('${config.path}\\WTF\\Config.wtf');
-    List<String> lines = file.readAsLinesSync();
-    lines.forEach((line) {
-      if (line.contains("SET lastAddonVersion ")) {
-        currentGameVersion = line.split("SET lastAddonVersion ")[1].replaceAll("\"", '');
-        //print('currentGameVersion: $currentGameVersion');
-      }
-    });
 
     await retail.list().toList().then((value) async {
-      String addonFolderName;
       for (var item in value) {
         if (item.toString().split(":")[0] == "Directory") {
-          addonFolderName = path.basename(item.path);
-          // String addonTitleNameFromToc = "";
-          String tempaddonTitleNameFromToc = "";
-          String tempDependencies = "";
-          bool findTitle = false;
-          bool findDependencies = false;
+          String addonFolderName = path.basename(item.path);
+          CurrentAddons currentAddonItem = CurrentAddons();
 
           final file = new File('${item.path}\\$addonFolderName.toc');
           List<String> lines = file.readAsLinesSync();
+
+          currentAddonItem.onPCFolderName = path.basename(item.path);
+          print(path.basename(item.path));
           lines.forEach(
             (line) {
-              if (line.contains("## Interface: ")) {
-                currentGameVersion = line.split("## Interface: ")[1];
-                //print('toc title: $tempaddonTitleNameFromToc');
+              if (line.contains("## Interface: ") && currentAddonItem.currentAddonGameVersion == null) {
+                currentAddonItem.currentAddonGameVersion = line.split("## Interface: ")[1];
               }
-              if (line.contains("## Title: ")) {
-                findTitle = true;
-                tempaddonTitleNameFromToc = line.split("Title: ")[1];
-                //print('toc title: $tempaddonTitleNameFromToc');
+              if (line.contains("Version: ") && currentAddonItem.onPCVersion == null) {
+                currentAddonItem.onPCVersion = line.split("Version: ")[1];
               }
-              if (line.contains("## Dependencies: ")) {
-                findDependencies = true;
-                tempDependencies = line.split("Dependencies: ")[1];
-                //print('toc dep: $tempDependencies');
+              if (line.contains("## Title: ") && currentAddonItem.onPCTocTitle == null) {
+                currentAddonItem.onPCTocTitle = line.split("Title: ")[1].replaceAll(new RegExp(r'[^\w\s]+'), '');
               }
-              if (findDependencies) {
-                //addonTitleNameFromToc = tempDependencies;
-                addonFolderName = tempDependencies;
-              } else {
-                if (tempaddonTitleNameFromToc != addonFolderName) {
-                  if (addonFolderName != "" && !addonFolderName.contains("|c")) {
-                    //print(addonFolderName);
-                    addonSearchQuery.add(addonFolderName.replaceAll(new RegExp(r'[^\w\s]+'), ''));
-                  }
-                  addonFolderName = tempaddonTitleNameFromToc;
-                }
+              if (line.contains("## Dependencies: ") && currentAddonItem.onPCDependencies == null) {
+                currentAddonItem.onPCDependencies = line.split("Dependencies: ")[1].replaceAll(new RegExp(r'[^\w\s]+'), '');
               }
             },
           );
-        }
-        if (addonFolderName != "" && !addonFolderName.contains("|c")) {
-          //print(addonFolderName);
-          addonSearchQuery.add(addonFolderName.replaceAll(new RegExp(r'[^\w\s]+'), ''));
+          //print(currentAddonItem.toJson());
+          //if (currentAddonItem.onPCDependencies == null) {
+          // print(currentAddonItem.toJson());
+          onPCAddons.add(currentAddonItem);
+          addonSearchQuery.add(currentAddonItem.onPCFolderName);
+          addonSearchQuery.add(currentAddonItem.onPCTocTitle);
+          addonSearchQuery.add(currentAddonItem.onPCTocTitle.replaceAll(' ', ''));
+          //}
         }
       }
     });
-    //print(addonSearchQuery.join(","));
-    //print('now: $addonFolderName');
-    // await fetchAddonInfo(addonName.substring(0, 6)).then((value) {
-    await fetchAddonInfo(addonSearchQuery.join(",")).then((data) {
-      if (data != null) {
-        for (var value in data) {
-          int latestFileIndex;
-          String foundAddon;
-          int latestModuleIndex;
 
-          latestFileIndex = value.latestFiles.indexWhere((element) => element.releaseType == 1 && element.gameVersionFlavor == 'wow_retail');
-          //print('latestFileIndex: $latestFileIndex');
-          if (latestFileIndex != -1) {
-            latestModuleIndex = value.latestFiles[latestFileIndex].modules.indexWhere((element) => (element.type == 3));
-            //print('latestModuleIndex: $latestModuleIndex');
-            if (latestModuleIndex != -1) {
-              var foundAddonIndex = addonSearchQuery.indexWhere(
-                  (element) => (element == value.name || element == value.latestFiles[latestFileIndex].modules[latestModuleIndex].foldername));
-              if (foundAddonIndex != -1) foundAddon = addonSearchQuery[foundAddonIndex];
-              String mainFolder = value.latestFiles[latestFileIndex].modules[latestModuleIndex].foldername;
-              String thumbnailUrl = 'https://vignette.wikia.nocookie.net/onceuponatime-fanon/images/1/14/No_Image_Available.jpg';
-              if (value.attachments.isNotEmpty) {
-                int defaultThumbnailIndex = value.attachments.indexWhere((element) => element.isDefault);
-                if (defaultThumbnailIndex == -1) {
-                  thumbnailUrl = value.attachments[0].thumbnailUrl;
-                } else {
-                  thumbnailUrl = value.attachments[defaultThumbnailIndex].thumbnailUrl;
+    await fetchAddonInfo(addonSearchQuery.join(",")).then((downloadedAddonList) {
+      if (downloadedAddonList != null) {
+        print(addonSearchQuery);
+        for (var downloadedAddonItem in downloadedAddonList) {
+          int latestFilesIndex =
+              downloadedAddonItem.latestFiles.indexWhere((item) => (item.releaseType == 1) && item.gameVersionFlavor == 'wow_retail');
+          print(latestFilesIndex);
+          // LibGetFrame-1.0-1.5.1.zip
+          int version = downloadedAddonItem.gameVersionLatestFiles.indexWhere((element) => element.fileType == 1);
+          print(version);
+          if (latestFilesIndex != -1) {
+            //print('${downloadedAddonItem.latestFiles[latestFilesIndex].displayName} -  $latestFilesIndex');
+            int modulesIndex = downloadedAddonItem.latestFiles[latestFilesIndex].modules.indexWhere((item) => item.type == 3);
+            if (modulesIndex != -1) {
+              //print('${downloadedAddonItem.latestFiles[latestFilesIndex].displayName} -  $modulesIndex');
+              String downloadedFolderName = downloadedAddonItem.latestFiles[latestFilesIndex].modules[modulesIndex].foldername;
+              int onPCAddonIndex = onPCAddons.indexWhere((item) => item.onPCFolderName == downloadedFolderName);
+              if (onPCAddonIndex != -1) {
+                // if (downloadedAddonItem.latestFiles[latestFilesIndex].gameVersion.isEmpty) {
+                //   int backupFilesIndex =
+                //       downloadedAddonItem.latestFiles.indexWhere((item) => (item.releaseType == 3) && item.gameVersionFlavor == 'wow_retail');
+                //   if (backupFilesIndex != -1) {
+                //     latestFilesIndex = backupFilesIndex;
+                //   }
+                // }
+
+                //print('${downloadedAddonItem.latestFiles[latestFilesIndex].displayName} - $onPCAddonIndex');
+                //print(onPCAddons[onPCAddonIndex].toJson());
+                if (onPCAddons[onPCAddonIndex].dependencies == null)
+                  onPCAddons[onPCAddonIndex].dependencies = downloadedAddonItem.latestFiles[latestFilesIndex].dependencies.isEmpty ? null : 'Yes';
+                if (onPCAddons[onPCAddonIndex].addonName == null) onPCAddons[onPCAddonIndex].addonName = downloadedAddonItem.name;
+                if (onPCAddons[onPCAddonIndex].latestVersion == null)
+                  onPCAddons[onPCAddonIndex].latestVersion = downloadedAddonItem.latestFiles[latestFilesIndex].displayName;
+                if (onPCAddons[onPCAddonIndex].gameVersion == null)
+                  onPCAddons[onPCAddonIndex].gameVersion = downloadedAddonItem.gameVersionLatestFiles[version].gameVersion;
+                if (onPCAddons[onPCAddonIndex].source == null) onPCAddons[onPCAddonIndex].source = "Curse";
+                if (onPCAddons[onPCAddonIndex].authors == null) onPCAddons[onPCAddonIndex].authors = downloadedAddonItem.authors[0].name;
+                if (onPCAddons[onPCAddonIndex].filename == null)
+                  onPCAddons[onPCAddonIndex].filename = downloadedAddonItem.latestFiles[latestFilesIndex].fileName;
+                if (onPCAddons[onPCAddonIndex].downloadUrl == null)
+                  onPCAddons[onPCAddonIndex].downloadUrl = downloadedAddonItem.latestFiles[latestFilesIndex].downloadUrl;
+                if (onPCAddons[onPCAddonIndex].slug == null) onPCAddons[onPCAddonIndex].slug = downloadedAddonItem.slug;
+
+                String thumbnailUrl = 'https://vignette.wikia.nocookie.net/onceuponatime-fanon/images/1/14/No_Image_Available.jpg';
+                if (downloadedAddonItem.attachments.isNotEmpty) {
+                  int defaultThumbnailIndex = downloadedAddonItem.attachments.indexWhere((element) => element.isDefault);
+                  if (defaultThumbnailIndex == -1) {
+                    onPCAddons[onPCAddonIndex].thumbnailUrl = thumbnailUrl;
+                  } else {
+                    if (downloadedAddonItem.attachments[defaultThumbnailIndex].thumbnailUrl != null) {
+                      onPCAddons[onPCAddonIndex].thumbnailUrl = downloadedAddonItem.attachments[defaultThumbnailIndex].thumbnailUrl;
+                    } else {
+                      onPCAddons[onPCAddonIndex].thumbnailUrl = thumbnailUrl;
+                    }
+                  }
                 }
-              }
-
-              // if (value.latestFiles[latestFileIndex].displayName.isEmpty) {
-              //   print('Missing DisplayName: ${value.name}');
-              // }
-
-              // if (value.latestFiles[latestFileIndex].gameVersion.isEmpty) {
-              //   print('Missing GameVersion: ${value.name}');
-              // }
-
-              // if (value.authors.isEmpty) {
-              //   print('Missing Authors: ${value.name}');
-              // }
-
-              //print('mainFolder: $mainFolder - $foundAddon');
-              if ((mainFolder == foundAddon || value.name == foundAddon) &&
-                  !value.slug.contains('beta') &&
-                  value.latestFiles[latestFileIndex].gameVersion.isNotEmpty) {
-                CurrentAddons c = CurrentAddons(
-                  addonName: value.name,
-                  btnText: "",
-                  isUpdate: true,
-                  thumbnailUrl: thumbnailUrl,
-                  latestVersion: value.latestFiles[latestFileIndex].displayName,
-                  gameVersion: value.latestFiles[latestFileIndex].sortableGameVersion[0].gameVersion,
-                  source: "Curse",
-                  authors: value.authors[0].name,
-                  currentAddonGameVersion: currentGameVersion,
-                  filename: value.latestFiles[latestFileIndex].fileName,
-                  downloadUrl: value.latestFiles[latestFileIndex].downloadUrl,
-                );
-                if ((listOfAddons.indexWhere((element) => element.addonName == mainFolder) == -1)) {
-                  listOfAddons.add(c);
+                if (onPCAddons[onPCAddonIndex].onPCVersion == null) onPCAddons[onPCAddonIndex].onPCVersion = 'Unable to locate';
+                if (onPCAddons[onPCAddonIndex].onPCVersion.replaceAll('_', '.') != onPCAddons[onPCAddonIndex].latestVersion.replaceAll('_', '.') &&
+                    !onPCAddons[onPCAddonIndex]
+                        .onPCVersion
+                        .replaceAll('_', '.')
+                        .contains(onPCAddons[onPCAddonIndex].latestVersion.replaceAll('_', '.')) &&
+                    !onPCAddons[onPCAddonIndex]
+                        .latestVersion
+                        .replaceAll('_', '.')
+                        .contains(onPCAddons[onPCAddonIndex].onPCVersion.replaceAll('_', '.'))) {
+                  //print('${downloadedAddonItem.name} - version');
+                  onPCAddons[onPCAddonIndex].isUpdated = false;
+                }
+                if (!onPCAddons[onPCAddonIndex].slug.contains('beta')) {
+                  print(onPCAddons[onPCAddonIndex].toJson());
+                  if (onPCAddons[onPCAddonIndex].dependencies == null || onPCAddons[onPCAddonIndex].onPCDependencies == null) {
+                    if ((addonsMasterList.indexWhere((element) => element.onPCFolderName == onPCAddons[onPCAddonIndex].onPCFolderName) == -1)) {
+                      addonsMasterList.add(onPCAddons[onPCAddonIndex]);
+                      //print(onPCAddons[onPCAddonIndex].toJson());
+                    }
+                  }
                 }
               }
             }
@@ -234,13 +237,12 @@ class _BodyState extends State<Body> {
         }
       }
     });
+    //print(listOfAddons.length);
 
-    //print(listOfAddons);
-    return listOfAddons;
+    return addonsMasterList;
   }
 
   SingleChildScrollView buildSingleChildScrollView(List<CurrentAddons> snapshot) {
-    int count = 0;
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       child: Column(
@@ -251,20 +253,22 @@ class _BodyState extends State<Body> {
               FlatButton(
                 child: Text("Update All", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                 color: Theme.of(context).buttonColor,
-                onPressed: () {
-                  for (var addon in snapshot) {
-                    setState(() {
-                      addon.isUpdate = !addon.isUpdate;
-                      addon.btnText = "Downloading...";
-                    });
-                    Future.delayed(Duration(seconds: 1)).then((value) {
-                      setState(() {
-                        //downloadFile(currentAddons.latestFiles[_latestVersion].downloadUrl);
-                        addon.btnText = "Up to date";
-                      });
-                    });
-                  }
-                },
+                disabledColor: Colors.grey,
+                onPressed: null,
+                // onPressed: () {
+                //   // for (var addon in snapshot) {
+                //   //   setState(() {
+                //   //     addon.isUpdated = !addon.isUpdated;
+                //   //     addon.btnText = "Downloading...";
+                //   //   });
+                //   //   Future.delayed(Duration(seconds: 1)).then((value) {
+                //   //     setState(() {
+                //   //       //downloadFile(currentAddons.latestFiles[_latestVersion].downloadUrl);
+                //   //       addon.btnText = "Up to date";
+                //   //     });
+                //   //   });
+                //   // }
+                // }
               ),
             ],
           ),
@@ -273,7 +277,7 @@ class _BodyState extends State<Body> {
             sortColumnIndex: colIndex,
             showCheckboxColumn: false,
             dataRowHeight: 60,
-            columnSpacing: MediaQuery.of(context).size.width * .095,
+            columnSpacing: MediaQuery.of(context).size.width * .05,
             columns: [
               buildDataColumn(snapshot, "Addon"),
               buildDataColumn(snapshot, "Status"),
@@ -284,16 +288,19 @@ class _BodyState extends State<Body> {
             ],
             rows: snapshot.map(
               (currentAddons) {
-                count += 1;
                 //print(currentAddons);
                 return DataRow(
                   cells: [
                     DataCell(
-                      SizedBox(
+                      Container(
+                          //width: MediaQuery.of(context).size.width * .4,
+                          //decoration: BoxDecoration(border: Border.all()),
                           child: Row(
                         children: [
                           Image.network(
-                            currentAddons.thumbnailUrl,
+                            currentAddons.thumbnailUrl == null
+                                ? 'https://vignette.wikia.nocookie.net/onceuponatime-fanon/images/1/14/No_Image_Available.jpg'
+                                : currentAddons.thumbnailUrl,
                             height: 50,
                             width: 50,
                           ),
@@ -309,7 +316,7 @@ class _BodyState extends State<Body> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  currentAddons.filename,
+                                  'Current Version: ${currentAddons.onPCVersion}',
                                   //style: TextStyle(color: Colors.black87),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -322,46 +329,49 @@ class _BodyState extends State<Body> {
                         //launchInBrowser(addonData.websiteUrl);
                       },
                     ),
-                    //DataCell(Text('$count - ${currentAddons.addonName}', overflow: TextOverflow.ellipsis)),
                     DataCell(
-                      currentAddons.isUpdate
-                          ? FlatButton(
-                              child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                              color: Theme.of(context).buttonColor,
-                              onPressed: () {
-                                setState(() {
-                                  currentAddons.isUpdate = !currentAddons.isUpdate;
-                                  currentAddons.btnText = "Downloading...";
-                                });
-                                print(currentAddons.downloadUrl);
-                                var dio = Dio();
-                                String currentDirectory = Directory.current.path;
-
-                                //downloadFile(false, true, '$defaultWowDir\\dump\\', '$defaultWowDir\\dump\\', currentAddons.downloadUrl)
-                                downloadUpdate(
-                                  isUnzip: true,
-                                  isAppUpdate: false,
-                                  dio: dio,
-                                  url: currentAddons.downloadUrl,
-                                  savePath: '$defaultWowDir\\dump\\',
-                                ).then((value) {
-                                  String newBtnText;
-                                  if (value == 'OK') {
-                                    newBtnText = 'Up to date';
-                                  } else {
-                                    newBtnText = value;
-                                  }
-                                  setState(() {
-                                    //currentAddons.isUpdate = !currentAddons.isUpdate;
-                                    currentAddons.btnText = newBtnText;
-                                  });
-                                });
-                              },
-                            )
-                          : SizedBox(
-                              child: Text(currentAddons.btnText),
+                      currentAddons.isUpdated
+                          ? SizedBox(
+                              child: Text("Up to date"),
                               // width: MediaQuery.of(context).size.width * 0.1,
-                            ),
+                            )
+                          : currentAddons.onPCVersion != 'Unable to locate'
+                              ? FlatButton(
+                                  child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                  color: Theme.of(context).buttonColor,
+                                  onPressed: () {
+                                    setState(() {
+                                      currentAddons.isUpdated = !currentAddons.isUpdated;
+                                      currentAddons.btnText = "Downloading...";
+                                    });
+                                    print(currentAddons.downloadUrl);
+                                    var dio = Dio();
+                                    downloadUpdate(
+                                      isUnzip: true,
+                                      isAppUpdate: false,
+                                      dio: dio,
+                                      url: currentAddons.downloadUrl,
+                                      savePath: '$defaultWowDir\\Interface\\Addons\\',
+                                    ).then((value) {
+                                      String newBtnText;
+                                      if (value == 'OK') {
+                                        newBtnText = 'Up to date';
+                                      } else {
+                                        newBtnText = value;
+                                      }
+                                      setState(() {
+                                        //currentAddons.isUpdate = !currentAddons.isUpdate;
+                                        currentAddons.btnText = newBtnText;
+                                      });
+                                    });
+                                  },
+                                )
+                              : FlatButton(
+                                  child: Text("Update", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                  color: Theme.of(context).buttonColor,
+                                  disabledColor: Colors.grey,
+                                  onPressed: null,
+                                ),
                     ),
                     DataCell(Text(currentAddons.latestVersion, overflow: TextOverflow.ellipsis)),
                     DataCell(Text(currentAddons.gameVersion, overflow: TextOverflow.ellipsis)),
@@ -387,7 +397,7 @@ class _BodyState extends State<Body> {
         onSort: (columnIndex, sortAscending) {
           setState(() {
             sort = !sort;
-            colIndex = 0;
+            colIndex = columnIndex;
           });
           onSortColumn(colIndex, sort, snapshot);
         });

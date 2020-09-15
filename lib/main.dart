@@ -3,8 +3,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:window_size/window_size.dart';
+import 'package:wow_addon_updater/components/json.dart';
 import './screens/home.dart';
-import 'config.dart';
+import 'models/config.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,10 +27,27 @@ void main() {
   });
 
   var updaterFile = File('update.bat');
+  var settingsFile = File('settings.json');
 
   if (updaterFile.existsSync()) {
     try {
       updaterFile.deleteSync();
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  if (!settingsFile.existsSync()) {
+    try {
+      final config = Config(
+        wowRetailFolder: r"C:\Program Files (x86)\World of Warcraft\_retail_\",
+        wowBetaFolder: r"C:\Program Files (x86)\World of Warcraft\_beta_\",
+        wowClassicFolder: r"C:\Program Files (x86)\World of Warcraft\_classic_\",
+        wowRetailPTRFolder: r"C:\Program Files (x86)\World of Warcraft\_ptr_\",
+      );
+      print('Creating settings.json');
+      String currentDirectory = Directory.current.path;
+      createFile(config.toJson(), Directory(currentDirectory), 'settings.json', true);
     } catch (e) {
       print(e.toString());
     }
