@@ -23,13 +23,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^0.12.2
+  http: ^0.13.5
   #pubspec_yaml: ^2.0.1
-  cached_network_image: ^2.3.1
-  oauth2: ^1.6.1
+  cached_network_image: ^3.2.3
+  oauth2: ^2.0.1
   process_run: ^0.10.12+3
-  archive: ^2.0.13
-  dio: ^3.0.10
+  archive: ^3.3.7
+  dio: ^5.1.1
   window_size:
     git:
       url: git://github.com/google/flutter-desktop-embedding.git
